@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Finder - Metin İçinde Kelime Bulma</title>
+    <style>
+        :root {
+            --primary-color: #4285f4;
+            --highlight-color: #ff6b6b;
+            --bg-color: #f8f9fa;
+            --text-color: #333;
+            --border-color: #ddd;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: var(--text-color);
+            background-color: var(--bg-color);
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid var(--primary-color);
+        }
+        
+        h1 {
+            color: var(--primary-color);
+            margin-bottom: 10px;
+        }
+        
+        .logo {
+            font-size: 2.5rem;
+            font-weight: bold;
+            color: var(--primary-color);
+            margin-bottom: 0;
+        }
+        
+        .tagline {
+            color: #666;
+            font-style: italic;
+        }
+        
+        .app-container {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        
+        .input-section, .search-section, .results-section {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .input-methods {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+        
+        .file-input-container {
+            position: relative;
+            flex: 1;
+        }
+        
+        .file-input-label {
+            display: block;
+            padding: 10px 15px;
+            background: var(--primary-color);
+            color: white;
+            border-radius: 4px;
+            text-align: center;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        
+        .file-input-label:hover {
+            background: #3367d6;
+        }
+        
+        #fileInput {
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            opacity: 0;
+            cursor: pointer;
+        }
+        
+        .clear-btn {
+            padding: 10px 15px;
+            background: #dc3545;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        
+        .clear-btn:hover {
+            background: #c82333;
+        }
+        
+        #textInput {
+            width: 100%;
+            min-height: 150px;
+            padding: 10px;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            resize: vertical;
+            font-family: inherit;
+        }
+        
+        .search-controls {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        
+        #searchInput {
+            flex: 1;
+            padding: 10px;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            font-size: 16px;
+        }
+        
+        .search-btn {
+            padding: 10px 20px;
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        
+        .search-btn:hover {
+            background: #3367d6;
+        }
+        
+        .search-options {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        
+        .option-label {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            cursor: pointer;
+        }
+        
+        .results-info {
+            padding: 10px;
+            background: #e9ecef;
+            border-radius: 4px;
+            margin-bottom: 15px;
+            display: flex;
+            justify-content: space-between;
+        }
+        
+        .navigation-buttons {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .nav-btn {
+            padding: 5px 10px;
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        
+        .nav-btn:disabled {
+            background: #cccccc;
+            cursor: not-allowed;
+        }
+        
+        #textContainer {
+            border: 1px solid var(--border-color);
+            padding: 15px;
+            border-radius: 4px;
+            background: white;
+            min-height: 300px;
+            max-height: 500px;
+            overflow-y: auto;
+            white-space: pre-line;
+        }
+        
+        .search-match {
+            background-color: rgba(255, 107, 107, 0.3);
+            text-decoration: underline;
+            text-decoration-color: var(--highlight-color);
+            text-decoration-thickness: 2px;
+        }
+        
+        .current-match {
+            background-color: var(--highlight-color);
+            color: white;
+            font-weight: bold;
+        }
+        
+        footer {
+            text-align: center;
+            margin-top: 30px;
+            padding-top: 15px;
+            border-top: 1px solid var(--border-color);
+            color: #666;
+            font-size: 0.9rem;
+        }
+        
+        @media (max-width: 768px) {
+            .input-methods, .search-controls {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1 class="logo">Finder</h1>
+        <p class="tagline">Metinlerinizde hızlı ve kolay arama yapın</p>
+    </header>
+    
+    <div class="app-container">
+        <section class="input-section">
+            <h2>Metin Girişi</h2>
+            <div class="input-methods">
+                <div class="file-input-container">
+                    <label for="fileInput" class="file-input-label">Dosya Yükle (.txt)</label>
+                    <input type="file" id="fileInput" accept=".txt">
+                </div>
+                <button class="clear-btn" onclick="clearText()">Temizle</button>
+            </div>
+            <textarea id="textInput" placeholder="Metni buraya yapıştırın veya yukarıdan dosya yükleyin..."></textarea>
+        </section>
+        
+        <section class="search-section">
+            <h2>Arama</h2>
+            <div class="search-controls">
+                <input type="text" id="searchInput" placeholder="Aranacak kelime veya ifade">
+                <button class="search-btn" onclick="searchText()">Ara</button>
+            </div>
+            <div class="search-options">
+                <label class="option-label">
+                    <input type="checkbox" id="caseSensitive"> Büyük/küçük harf duyarlı
+                </label>
+                <label class="option-label">
+                    <input type="checkbox" id="wholeWord"> Tam kelime eşleşmesi
+                </label>
+            </div>
+        </section>
+        
+        <section class="results-section">
+            <h2>Sonuçlar</h2>
+            <div class="results-info">
+                <span id="resultCount">Arama yapılmadı</span>
+                <div class="navigation-buttons">
+                    <button class="nav-btn" id="prevMatch" onclick="navigateMatches(-1)" disabled>Önceki</button>
+                    <button class="nav-btn" id="nextMatch" onclick="navigateMatches(1)" disabled>Sonraki</button>
+                </div>
+            </div>
+            <div id="textContainer"></div>
+        </section>
+    </div>
+    
+    <footer>
+        <p>Finder &copy; 2025 - Metin Arama Uygulaması</p>
+    </footer>
+
+    <script>
+        // Uygulama durumu
+        const state = {
+            matches: [],
+            currentMatchIndex: -1,
+            searchTerm: ''
+        };
+        
+        // DOM elemanları
+        const elements = {
+            textInput: document.getElementById('textInput'),
+            fileInput: document.getElementById('fileInput'),
+            searchInput: document.getElementById('searchInput'),
+            textContainer: document.getElementById('textContainer'),
+            resultCount: document.getElementById('resultCount'),
+            prevMatch: document.getElementById('prevMatch'),
+            nextMatch: document.getElementById('nextMatch'),
+            caseSensitive: document.getElementById('caseSensitive'),
+            wholeWord: document.getElementById('wholeWord')
+        };
+        
+        // Dosya yükleme işlemi
+        elements.fileInput.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    elements.textInput.value = e.target.result;
+                };
+                reader.readAsText(file);
+            }
+        });
+        
+        // Metin arama fonksiyonu
+        function searchText() {
+            const text = elements.textInput.value;
+            state.searchTerm = elements.searchInput.value.trim();
+            
+            if (!text || !state.searchTerm) {
+                elements.resultCount.textContent = 'Lütfen metin ve arama terimi girin';
+                return;
+            }
+            
+            // Arama seçeneklerini al
+            const caseSensitive = elements.caseSensitive.checked;
+            const wholeWord = elements.wholeWord.checked;
+            
+            // Regex oluştur
+            let pattern = state.searchTerm.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            
+            if (wholeWord) {
+                pattern = `\\b${pattern}\\b`;
+            }
+            
+            const flags = caseSensitive ? 'g' : 'gi';
+            const regex = new RegExp(pattern, flags);
+            
+            // Eşleşmeleri bul
+            const matches = [...text.matchAll(regex)];
+            state.matches = matches;
+            state.currentMatchIndex = matches.length > 0 ? 0 : -1;
+            
+            // Sonuçları göster
+            displayResults(text, regex);
+            updateNavigationButtons();
+            
+            // Sonuç sayısını güncelle
+            const matchCount = matches.length;
+            elements.resultCount.textContent = matchCount === 0 
+                ? 'Eşleşme bulunamadı' 
+                : `Toplam ${matchCount} eşleşme bulundu`;
+        }
+        
+        // Sonuçları görüntüleme fonksiyonu
+        function displayResults(text, regex) {
+            // Tüm metni paragraflara böl
+            const paragraphs = text.split('\n');
+            let html = '';
+            
+            paragraphs.forEach(paragraph => {
+                if (paragraph.trim() === '') {
+                    html += '<div><br></div>';
+                    return;
+                }
+                
+                // Eşleşmeleri işaretle
+                const markedText = paragraph.replace(regex, match => 
+                    `<span class="search-match">${match}</span>`
+                );
+                
+                html += `<div>${markedText}</div>`;
+            });
+            
+            elements.textContainer.innerHTML = html;
+            
+            // Eğer eşleşme varsa, ilk eşleşmeyi vurgula
+            if (state.currentMatchIndex >= 0) {
+                highlightCurrentMatch();
+            }
+        }
+        
+        // Geçerli eşleşmeyi vurgula
+        function highlightCurrentMatch() {
+            // Önceki tüm current-match sınıflarını kaldır
+            document.querySelectorAll('.current-match').forEach(el => {
+                el.classList.remove('current-match');
+                el.classList.add('search-match');
+            });
+            
+            // Yeni current-match'i bul ve vurgula
+            const allMatches = document.querySelectorAll('.search-match');
+            if (allMatches.length > 0 && state.currentMatchIndex >= 0 && state.currentMatchIndex < allMatches.length) {
+                const currentMatch = allMatches[state.currentMatchIndex];
+                currentMatch.classList.remove('search-match');
+                currentMatch.classList.add('current-match');
+                
+                // Görünür alana getir
+                currentMatch.scrollIntoView({
+                    behavior: 'smooth',
+                    block: 'center'
+                });
+            }
+        }
+        
+        // Eşleşmeler arasında gezinme
+        function navigateMatches(direction) {
+            if (state.matches.length === 0) return;
+            
+            state.currentMatchIndex += direction;
+            
+            // Sınır kontrolü
+            if (state.currentMatchIndex < 0) {
+                state.currentMatchIndex = state.matches.length - 1;
+            } else if (state.currentMatchIndex >= state.matches.length) {
+                state.currentMatchIndex = 0;
+            }
+            
+            highlightCurrentMatch();
+            updateNavigationButtons();
+        }
+        
+        // Gezinme butonlarını güncelle
+        function updateNavigationButtons() {
+            elements.prevMatch.disabled = state.matches.length === 0;
+            elements.nextMatch.disabled = state.matches.length === 0;
+        }
+        
+        // Metin alanını temizle
+        function clearText() {
+            elements.textInput.value = '';
+            elements.fileInput.value = '';
+            elements.searchInput.value = '';
+            elements.textContainer.innerHTML = '';
+            elements.resultCount.textContent = 'Arama yapılmadı';
+            state.matches = [];
+            state.currentMatchIndex = -1;
+            updateNavigationButtons();
+        }
+        
+        // Klavye kısayolları
+        document.addEventListener('keydown', function(e) {
+            if (e.ctrlKey && e.key === 'f') {
+                e.preventDefault();
+                elements.searchInput.focus();
+            }
+            
+            if (e.key === 'Enter' && document.activeElement === elements.searchInput) {
+                searchText();
+            }
+            
+            if (e.key === 'F3' || (e.shiftKey && e.key === 'F3')) {
+                e.preventDefault();
+                navigateMatches(e.shiftKey ? -1 : 1);
+            }
+        });
+    </script>
+</body>
+</html>
